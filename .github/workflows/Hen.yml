@@ -15,23 +15,30 @@ jobs:
       - name: Install Playit
         run: Start-Process msiexec.exe -ArgumentList "/i playit.msi /quiet /norestart" -Wait
 
-      - name: Cari Path Playit
-        shell: powershell
+      - name: Jalankan Playit Tunnel
         run: |
-          $playitPath = Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object -ExpandProperty FullName
-          if ($playitPath) {
-            Write-Output "Playit ditemukan di: $playitPath"
-            echo "PLAYIT_PATH=$playitPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
-          } else {
+          $playitPath = "C:\Program Files (x86)\Playit\playit.exe"
+          if (!(Test-Path $playitPath)) {
+            $playitPath = "C:\Program Files\Playit\playit.exe"
+          }
+          if (!(Test-Path $playitPath)) {
             Write-Output "Playit tidak ditemukan"
             exit 1
           }
-
-      - name: Jalankan Playit Tunnel
-        run: "& $env:PLAYIT_PATH tunnel start --public"
+          Write-Output "Playit ditemukan di: $playitPath"
+          & $playitPath tunnel start --public
 
       - name: Cek Status Tunnel
-        run: "& $env:PLAYIT_PATH tunnel status"
+        run: |
+          $playitPath = "C:\Program Files (x86)\Playit\playit.exe"
+          if (!(Test-Path $playitPath)) {
+            $playitPath = "C:\Program Files\Playit\playit.exe"
+          }
+          if (!(Test-Path $playitPath)) {
+            Write-Output "Playit tidak ditemukan"
+            exit 1
+          }
+          & $playitPath tunnel status
 
       - name: Enable Remote Desktop (RDP)
         run: |
