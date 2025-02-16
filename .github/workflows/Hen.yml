@@ -4,30 +4,32 @@ on: [push, workflow_dispatch]
 
 jobs:
   build:
-
     runs-on: windows-latest
 
     steps:
-    - name: Download Playit MSI
-      run: Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi" -OutFile "playit.msi"
+      - name: Download Playit MSI
+        run: Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi" -OutFile "playit.msi"
 
-    - name: Install Playit
-      run: msiexec /i playit.msi /quiet /norestart
+      - name: Install Playit
+        run: msiexec /i playit.msi /quiet /norestart
 
-    - name: Cari Path Playit
-      run: Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object FullName
+      - name: Cari Path Playit
+        run: Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object FullName
 
-    - name: Jalankan Playit Tunnel
-      run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel start --public"
+      - name: Jalankan Playit Tunnel
+        run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel start --public"
 
-    - name: Cek Status Tunnel
-      run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel status"
+      - name: Cek Status Tunnel
+        run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel status"
 
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+      - name: Enable TS
+        run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
 
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+      - name: Enable Firewall for RDP
+        run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+      - name: Set User Authentication for RDP
+        run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+      - name: Set Password for RunnerAdmin
+        run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
