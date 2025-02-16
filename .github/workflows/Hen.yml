@@ -9,18 +9,18 @@ jobs:
 
     steps:
     - name: Download Playit MSI
-      run: Invoke-WebRequest https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi -OutFile playit.msi
+      run: Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi" -OutFile "playit.msi"
 
     - name: Install Playit
       run: msiexec /i playit.msi /quiet /norestart
 
     - name: Cari Path Playit
-      run: Get-ChildItem -Path "C:\Program Files\" -Recurse -Filter "playit.exe"
+      run: Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object FullName
 
-    - name: Start Playit Tunnel
+    - name: Jalankan Playit Tunnel
       run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel start --public"
 
-    - name: Display Tunnel Status
+    - name: Cek Status Tunnel
       run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel status"
 
     - name: Enable TS
