@@ -1,52 +1,25 @@
 name: CI
 
-on:
-  push:
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
+
     runs-on: windows-latest
 
     steps:
-      - name: Download Playit MSI
-        run: Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi" -OutFile "playit.msi"
-
-      - name: Install Playit
-        run: Start-Process msiexec.exe -ArgumentList "/i playit.msi /quiet /norestart" -Wait
-
-      - name: Jalankan Playit Tunnel
-        run: |
-          $playitPath = "C:\Program Files (x86)\Playit\playit.exe"
-          if (!(Test-Path $playitPath)) {
-            $playitPath = "C:\Program Files\Playit\playit.exe"
-          }
-          if (!(Test-Path $playitPath)) {
-            Write-Output "Playit tidak ditemukan"
-            exit 1
-          }
-          Write-Output "Playit ditemukan di: $playitPath"
-          & $playitPath tunnel start --public
-
-      - name: Cek Status Tunnel
-        run: |
-          $playitPath = "C:\Program Files (x86)\Playit\playit.exe"
-          if (!(Test-Path $playitPath)) {
-            $playitPath = "C:\Program Files\Playit\playit.exe"
-          }
-          if (!(Test-Path $playitPath)) {
-            Write-Output "Playit tidak ditemukan"
-            exit 1
-          }
-          & $playitPath tunnel status
-
-      - name: Enable Remote Desktop (RDP)
-        run: |
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
-
-      - name: Set Password for RunnerAdmin
-        run: |
-          $password = ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force
-          Set-LocalUser -Name "runneradmin" -Password $password
+    - name: Download
+      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+    - name: Extract
+      run: Expand-Archive ngrok.zip
+    - name: Auth
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Enable TS
+      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+    - name: Create Tunnel
+      run: .\ngrok\ngrok.exe tcp 3389
