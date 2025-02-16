@@ -1,6 +1,8 @@
 name: CI
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,25 +13,33 @@ jobs:
         run: Invoke-WebRequest -Uri "https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-windows-x86_64-signed.msi" -OutFile "playit.msi"
 
       - name: Install Playit
-        run: msiexec /i playit.msi /quiet /norestart
+        run: Start-Process msiexec.exe -ArgumentList "/i playit.msi /quiet /norestart" -Wait
 
       - name: Cari Path Playit
-        run: Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object FullName
+        shell: powershell
+        run: |
+          $playitPath = Get-ChildItem -Path "C:\Program Files\", "C:\Program Files (x86)\" -Recurse -Filter "playit.exe" | Select-Object -ExpandProperty FullName
+          if ($playitPath) {
+            Write-Output "Playit ditemukan di: $playitPath"
+            echo "PLAYIT_PATH=$playitPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          } else {
+            Write-Output "Playit tidak ditemukan"
+            exit 1
+          }
 
       - name: Jalankan Playit Tunnel
-        run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel start --public"
+        run: "& $env:PLAYIT_PATH tunnel start --public"
 
       - name: Cek Status Tunnel
-        run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel status"
+        run: "& $env:PLAYIT_PATH tunnel status"
 
-      - name: Enable TS
-        run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-
-      - name: Enable Firewall for RDP
-        run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
-      - name: Set User Authentication for RDP
-        run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+      - name: Enable Remote Desktop (RDP)
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
       - name: Set Password for RunnerAdmin
-        run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+        run: |
+          $password = ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force
+          Set-LocalUser -Name "runneradmin" -Password $password
