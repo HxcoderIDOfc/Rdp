@@ -14,6 +14,11 @@ jobs:
     - name: Install Playit
       run: msiexec /i playit.msi /quiet /norestart
 
+    - name: Add Playit to PATH
+      run: |
+        $env:Path += ";C:\Program Files\Playit"
+        echo $env:Path
+
     - name: Start Playit Tunnel
       run: playit tunnel start --public
 
