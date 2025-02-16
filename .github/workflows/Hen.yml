@@ -1,4 +1,4 @@
-name: CIID
+name: CIIDO
 
 on: [push, workflow_dispatch]
 
