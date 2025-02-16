@@ -14,19 +14,17 @@ jobs:
     - name: Install Playit
       run: msiexec /i playit.msi /quiet /norestart
 
-    - name: Add Playit to PATH
-      run: |
-        $env:Path += ";C:\Program Files\Playit"
-        echo $env:Path
+    - name: Cari Path Playit
+      run: Get-ChildItem -Path "C:\Program Files\" -Recurse -Filter "playit.exe"
 
     - name: Start Playit Tunnel
-      run: playit tunnel start --public
+      run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel start --public"
 
     - name: Display Tunnel Status
-      run: playit tunnel status
+      run: "& 'C:\Program Files (x86)\Playit\playit.exe' tunnel status"
 
     - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
 
     - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
